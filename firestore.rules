@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read and write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Interpreters can read and write their own interpreter document
+    match /interpreters/{interpreterId} {
+      allow read, write: if request.auth != null && request.auth.uid == interpreterId;
+    }
+    
+    // Sessions: users can read sessions they're part of, interpreters can read/write sessions they're assigned to
+    match /sessions/{sessionId} {
+      allow read: if request.auth != null && 
+        (resource.data.user_id == request.auth.uid || 
+         resource.data.interpreter_id == request.auth.uid);
+      allow write: if request.auth != null && 
+        (resource.data.user_id == request.auth.uid || 
+         resource.data.interpreter_id == request.auth.uid);
+      allow create: if request.auth != null && 
+        (request.resource.data.user_id == request.auth.uid || 
+         request.resource.data.interpreter_id == request.auth.uid);
+    }
+    
+    // Calls: WebRTC signaling - only session participants can read/write call data
+    match /CALLS/{sessionId} {
+      function isParticipant() {
+        // Check if user is a participant in the session
+        return exists(/databases/$(database)/documents/sessions/$(sessionId)) &&
+          (get(/databases/$(database)/documents/sessions/$(sessionId)).data.user_id == request.auth.uid ||
+           get(/databases/$(database)/documents/sessions/$(sessionId)).data.interpreter_id == request.auth.uid);
+      }
+
+      allow read, write: if request.auth != null && isParticipant();
+
+      // ICE candidates subcollections
+      match /callerCandidates/{candidateId} {
+        allow read, write: if request.auth != null && isParticipant();
+      }
+      match /calleeCandidates/{candidateId} {
+        allow read, write: if request.auth != null && isParticipant();
+      }
+    }
+    
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
