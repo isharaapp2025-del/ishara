@@ -67,3 +67,4 @@ The application now has fallback mechanisms:
 3. **Test thoroughly** with both user and interpreter roles
 
 The application is fully functional and ready for testing!
+
