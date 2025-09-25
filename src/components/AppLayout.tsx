@@ -50,7 +50,6 @@ function AppLayout() {
             </>
           )}
               <Button component={Link} to="/profile">{t("profile")}</Button>
-              <Button component={Link} to="/agora-appid-test">Test App ID</Button>
           <Select size="small" value={locale} onChange={(e) => setLocale(e.target.value as "en" | "ar")} sx={{ mx: 1 }}>
             <MenuItem value="en">English</MenuItem>
             <MenuItem value="ar">العربية</MenuItem>

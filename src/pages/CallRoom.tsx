@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import VideoCall from "../components/VideoCall";
-import { createWebRTCCall } from "../services/callService";
 
 export default function CallRoom() {
   const { sessionId } = useParams();
@@ -48,12 +47,9 @@ export default function CallRoom() {
           return;
         }
         
-        // Create WebRTC call document if it doesn't exist
-        try {
-          await createWebRTCCall(sessionId, user.uid);
-        } catch (error) {
-          console.warn('Call document may already exist:', error);
-        }
+        // Create PeerJS call document if it doesn't exist
+        // For now, we'll let the VideoCall component handle peer ID generation
+        // The call document will be created when the first participant joins
         
         setSessionData(session);
         

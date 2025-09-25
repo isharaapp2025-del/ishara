@@ -1,9 +1,10 @@
 import { Box, Button, Stack, Typography, Snackbar, Alert } from "@mui/material";
 import { useI18n } from "../context/I18nContext";
 import { useAuth } from "../context/AuthContext";
-import { collection, doc, onSnapshot, query, updateDoc, where } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, updateDoc, where, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useEffect, useState } from "react";
+import { generateAndStoreCallToken } from "../services/callService";
 
 interface SItem {
   id: string;
@@ -43,17 +44,20 @@ function Requests() {
       // Update session status
       await updateDoc(doc(db, "sessions", id), { status });
       
-      // If confirming, add call data (channel and temp token)
+      // If confirming, generate and store call token
       if (status === "confirmed") {
-        // For now, we'll use the session ID as the channel name
-        // In production, you would generate a temporary token from Agora Console
-        const callData = {
-          channelName: id, // Use session ID as channel name
-          tempToken: "", // This should be replaced with actual temp token from Agora Console
-        };
-        
-        await updateDoc(doc(db, "sessions", id), callData);
-        console.log('Call data added to session:', id);
+        try {
+          // Get session details to get user_id
+          const sessionDoc = await getDoc(doc(db, "sessions", id));
+          if (sessionDoc.exists()) {
+            const sessionData = sessionDoc.data();
+            await generateAndStoreCallToken(id, sessionData.user_id, user!.uid);
+            console.log('Call token generated and stored for session:', id);
+          }
+        } catch (tokenError) {
+          console.error('Failed to generate call token:', tokenError);
+          // Don't fail the whole operation if token generation fails
+        }
       }
       
       const action = status === "confirmed" ? "accepted" : "rejected";

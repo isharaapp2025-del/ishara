@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { TextField, Button, Typography, Box, Alert } from "@mui/material";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { TextField, Button, Typography, Box, Alert, Divider } from "@mui/material";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { useI18n } from "../context/I18nContext";
@@ -45,6 +45,33 @@ function Login() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      setError("");
+      
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      
+      console.log("✅ User logged in with Google:", result.user);
+      
+      // Redirect to ProtectedRoute
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        setError("Sign-in was cancelled. Please try again.");
+      } else if (error.code === 'auth/popup-blocked') {
+        setError("Popup was blocked by your browser. Please allow popups and try again.");
+      } else {
+        setError(error.message || "Google sign-in failed. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Box sx={{ p: 3, maxWidth: 400, mx: "auto" }}>
       <Typography variant="h5" gutterBottom>
@@ -57,6 +84,41 @@ function Login() {
         </Alert>
       )}
 
+      {/* Google Sign-In Button */}
+      <Button
+        variant="outlined"
+        fullWidth
+        sx={{ 
+          mt: 2, 
+          mb: 2,
+          backgroundColor: 'white',
+          color: 'black',
+          border: '1px solid #dadce0',
+          '&:hover': {
+            backgroundColor: '#f8f9fa',
+            border: '1px solid #dadce0'
+          }
+        }}
+        onClick={handleGoogleLogin}
+        disabled={isLoading}
+        startIcon={
+          <img 
+            src="https://developers.google.com/identity/images/g-logo.png" 
+            alt="Google" 
+            style={{ width: 20, height: 20 }}
+          />
+        }
+      >
+        {isLoading ? "Signing In..." : "Continue with Google"}
+      </Button>
+
+      <Divider sx={{ my: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          or
+        </Typography>
+      </Divider>
+
+      {/* Email/Password Form */}
       <TextField
         label={t("email")}
         fullWidth

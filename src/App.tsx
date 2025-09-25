@@ -15,7 +15,6 @@ import Availability from "./pages/Availability";
 import MySessions from "./pages/MySessions";
 import InterpreterSessions from "./pages/InterpreterSessions";
 import CallRoom from "./pages/CallRoom";
-import TokenTester from "./components/TokenTester";
 
 function App() {
   const { t } = useI18n();
@@ -109,12 +108,6 @@ function App() {
                 <Profile />
               </RequireRole>
             }
-          />
-
-
-          <Route
-            path="/token-tester"
-            element={<TokenTester />}
           />
 
           {/* Call room for both roles */}
