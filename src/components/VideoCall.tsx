@@ -21,6 +21,8 @@ import {
   cleanup
 } from "../services/peerjsService";
 import { getCallData, updateCalleePeerId, endPeerJSCall, createPeerJSCall } from "../services/callService";
+import { onSnapshot, doc } from "firebase/firestore";
+import { db } from "../firebase";
 
 interface VideoCallProps {
   sessionId: string;
@@ -107,11 +109,37 @@ const VideoCall: React.FC<VideoCallProps> = ({ sessionId, currentUid, role, onCa
           // Caller should call the interpreter's peer ID
           if (callData?.calleePeerId) {
             setRemotePeerId(callData.calleePeerId);
-            await callPeer(callData.calleePeerId);
-            setIsJoined(true);
+            await callPeer(callData.calleePeerId, (stream: MediaStream) => {
+              console.log('Received remote stream as caller');
+              if (remoteVideoRef.current) {
+                remoteVideoRef.current.srcObject = stream;
+              }
+              setIsJoined(true);
+            });
           } else {
             console.log('Waiting for interpreter to join...');
-            // The call will be initiated when interpreter joins
+            // Set up listener to watch for interpreter joining
+            const callDocRef = doc(db, 'CALLS', sessionId);
+            const unsubscribe = onSnapshot(callDocRef, async (doc) => {
+              if (doc.exists()) {
+                const callData = doc.data();
+                if (callData.calleePeerId && !isJoined) {
+                  console.log('Interpreter joined, initiating call...');
+                  setRemotePeerId(callData.calleePeerId);
+                  await callPeer(callData.calleePeerId, (stream: MediaStream) => {
+                    console.log('Received remote stream as caller');
+                    if (remoteVideoRef.current) {
+                      remoteVideoRef.current.srcObject = stream;
+                    }
+                    setIsJoined(true);
+                  });
+                  unsubscribe(); // Stop listening once call is initiated
+                }
+              }
+            });
+            
+            // Clean up listener on component unmount
+            return () => unsubscribe();
           }
         } else {
           console.log('Waiting as callee...');

@@ -156,7 +156,7 @@ export const startLocalStream = async (audio: boolean = true, video: boolean = t
 };
 
 // Call another peer
-export const callPeer = async (remotePeerId: string): Promise<void> => {
+export const callPeer = async (remotePeerId: string, onRemoteStream?: (stream: MediaStream) => void): Promise<void> => {
   try {
     if (!peer) {
       throw new Error('Peer not initialized');
@@ -176,6 +176,9 @@ export const callPeer = async (remotePeerId: string): Promise<void> => {
     call.on('stream', (stream: MediaStream) => {
       console.log('Received remote stream');
       remoteStream = stream;
+      if (onRemoteStream) {
+        onRemoteStream(stream);
+      }
     });
     
     call.on('close', () => {
