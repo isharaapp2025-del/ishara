@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { collection, doc, onSnapshot, query, updateDoc, where, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { useEffect, useState } from "react";
-import { generateAndStoreCallToken } from "../services/callService";
+import { createPeerJSCall } from "../services/callService";
 
 interface SItem {
   id: string;
@@ -44,19 +44,16 @@ function Requests() {
       // Update session status
       await updateDoc(doc(db, "sessions", id), { status });
       
-      // If confirming, generate and store call token
+      // If confirming, create PeerJS call
       if (status === "confirmed") {
         try {
-          // Get session details to get user_id
-          const sessionDoc = await getDoc(doc(db, "sessions", id));
-          if (sessionDoc.exists()) {
-            const sessionData = sessionDoc.data();
-            await generateAndStoreCallToken(id, sessionData.user_id, user!.uid);
-            console.log('Call token generated and stored for session:', id);
-          }
-        } catch (tokenError) {
-          console.error('Failed to generate call token:', tokenError);
-          // Don't fail the whole operation if token generation fails
+          // Generate a simple peer ID for the caller (user)
+          const callerPeerId = `peer_${user!.uid}_${Date.now()}`;
+          await createPeerJSCall(id, user!.uid, callerPeerId);
+          console.log('PeerJS call created for session:', id);
+        } catch (callError) {
+          console.error('Failed to create PeerJS call:', callError);
+          // Don't fail the whole operation if call creation fails
         }
       }
       
